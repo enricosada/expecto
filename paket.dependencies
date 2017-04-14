@@ -1,17 +1,17 @@
 source https://nuget.org/api/v2
 redirects: on
-framework net461
+framework net461, netstandard1.6
 
 github logary/logary src/Logary.Facade/Facade.fs
 
 nuget Argu
 nuget FsCheck
-nuget FSharp.Core ~> 3
+nuget FSharp.Core
 nuget BenchmarkDotNet
 nuget BenchmarkDotNet.Toolchains.Roslyn
 nuget BenchmarkDotNet.Core
 nuget NuGet.CommandLine
-nuget Mono.Cecil = 0.10-beta5 framework: net461
+nuget Mono.Cecil = 0.10-beta5
 
 group build
   source https://www.nuget.org/api/v2

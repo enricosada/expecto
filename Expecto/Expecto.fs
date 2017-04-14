@@ -399,7 +399,7 @@ module Impl =
   open Expecto.Logging.Message
   open Helpers
   open Mono.Cecil
-  
+
   let logger = Log.create "Expecto"
 
   type TestResult =
@@ -1020,7 +1020,8 @@ module Impl =
       let rand = Random()
 
       let randNext tests =
-        List.length tests |> rand.Next |> List.nth tests
+        let next = List.length tests |> rand.Next
+        List.item next tests
 
       let finishTimestamp =
         lazy
@@ -1220,7 +1221,7 @@ module Impl =
     let getFirstOrDefaultSequencePoint (m:MethodDefinition) =
       m.Body.Instructions
       |> Seq.tryPick (fun i ->
-        let sp = m.DebugInformation.GetSequencePoint i 
+        let sp = m.DebugInformation.GetSequencePoint i
         if sp <> null && sp.StartLine <> lineNumberIndicatingHiddenLine then
           Some sp else None)
       |> Option.map (fun maybeSequencePoint -> maybeSequencePoint)
