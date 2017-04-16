@@ -2,6 +2,7 @@ require 'bundler/setup'
 require 'albacore'
 require 'albacore/tasks/release'
 require 'albacore/tasks/versionizer'
+require 'semver'
 
 Configuration = ENV['CONFIGURATION'] || 'Release'
 
@@ -70,24 +71,36 @@ directory 'build/pkg'
 
 
 task :create_nugets_dotnetcli => ['build/clipkg', :build_dotnetcli] do
-  system "dotnet", %W|pack -v n --no-build -c #{Configuration} -o build/clipkg /p:Version=#{ENV['NUGET_VERSION']} Expecto.netcore/Expecto.netcore.fsproj|
+  system "dotnet", %W|pack -v n --no-build -c #{Configuration} -o ../build/clipkg /p:Version=#{ENV['NUGET_VERSION']} Expecto.netcore/Expecto.netcore.fsproj|
 end
 
+desc 'Merge standard and dotnetcli nupkgs'
+  task :merge_nupkgs => [ :create_nugets_dotnetcli, :create_nugets ] do
+    system "dotnet", %W|restore tools/tools.proj -v n|
+    Dir.chdir "tools" do
+      [ "Expecto" ].each do |item|
+          version = SemVer.find.format("%M.%m.%p%s")
+          sourcenupkg = "../build/pkg/#{item}.#{version}.nupkg"
+          netcorenupkg = "../build/clipkg/#{item}.#{version}.nupkg"
+          system "dotnet", %W|mergenupkg --source "#{sourcenupkg}" --other "#{netcorenupkg}" --framework netstandard1.6|
+      end
+    end
+  end
 
 desc 'package nugets - finds all projects and package them'
 nugets_pack :create_nugets => ['build/pkg', :versioning, :compile, :create_nugets_dotnetcli] do |p|
-  p.configuration = Configuration
-  p.files   = FileList['*/*.{csproj,fsproj,nuspec}'].
-    exclude(/Tests|Sample|netcore/)
-  p.out     = 'build/pkg'
-  p.exe     = 'packages/NuGet.CommandLine/tools/NuGet.exe'
-  p.with_metadata do |m|
-    m.description = 'Expecto is a smooth test framework for F#, cloned from Fuchu with added functionality for making it easier to use.'
-    m.authors     = 'Henrik Feldt, Logibit AB, formerly @mausch'
-    m.project_url = 'https://github.com/haf/expecto'
-    m.icon_url    = 'https://raw.githubusercontent.com/haf/expecto/master/docs/expecto-logo-small.png'
-    m.tags        = 'testing fsharp assert expect'
-    m.version     = ENV['NUGET_VERSION']
+    p.configuration = Configuration
+    p.files   = FileList['*/*.{csproj,fsproj,nuspec}'].
+      exclude(/Tests|Sample|netcore/)
+    p.out     = 'build/pkg'
+    p.exe     = 'packages/NuGet.CommandLine/tools/NuGet.exe'
+    p.with_metadata do |m|
+      m.description = 'Expecto is a smooth test framework for F#, cloned from Fuchu with added functionality for making it easier to use.'
+      m.authors     = 'Henrik Feldt, Logibit AB, formerly @mausch'
+      m.project_url = 'https://github.com/haf/expecto'
+      m.icon_url    = 'https://raw.githubusercontent.com/haf/expecto/master/docs/expecto-logo-small.png'
+      m.tags        = 'testing fsharp assert expect'
+      m.version     = ENV['NUGET_VERSION']
   end
 end
 
@@ -101,7 +114,7 @@ end
 
 task :tests => :'tests:unit'
 task :'tests:unit' => [ :restore_dotnetcli ]
-task :default => [ :compile, :tests, :create_nugets ]
+task :default => [ :compile, :tests, :create_nugets, :merge_nupkgs ]
 
 task :ensure_nuget_key do
   raise 'missing env NUGET_KEY value' unless ENV['NUGET_KEY']
