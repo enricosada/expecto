@@ -1,8 +1,8 @@
 source https://nuget.org/api/v2
 redirects: on
-framework net461, netstandard1.6
+framework net461
 
-github logary/logary src/Logary.Facade/Facade.fs
+github logary/logary src/Logary.Facade/Facade.fs 1694c019e4cb779928011eca724a82b66756d5b4
 
 nuget Argu
 nuget FsCheck
